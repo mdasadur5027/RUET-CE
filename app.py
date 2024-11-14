@@ -2,6 +2,9 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Title
+st.title("Beam SFD and BMD Calculator")
+
 # Input: Beam length
 beam_length = st.number_input("Enter the beam length (m):", min_value=1.0, value=10.0, step=0.5)
 
@@ -34,6 +37,29 @@ for i, x in enumerate(positions):
     shear_force[i] = V
     bending_moment[i] = A_y * x - sum(load * max(0, x - pos) for load, pos in loads)
 
+# Plotting the beam with supports and loads
+fig, ax = plt.subplots(figsize=(10, 2))
+ax.plot([0, beam_length], [0, 0], 'k-', lw=5)  # Beam line
+
+# Plot supports
+ax.plot(0, 0, 'go', markersize=10, label="Support A")  # Left support
+ax.plot(beam_length, 0, 'go', markersize=10, label="Support B")  # Right support
+
+# Plot loads
+for magnitude, position in loads:
+    ax.arrow(position, 0.1, 0, -0.1, head_width=0.2, head_length=0.05, fc='red', ec='red')
+    ax.text(position, 0.15, f'{magnitude} kN', color='red', ha='center')
+
+ax.set_xlim(-1, beam_length + 1)
+ax.set_ylim(-1, 1)
+ax.set_title("Beam with Supports and Loads")
+ax.set_xlabel("Position along the beam (m)")
+ax.axis('off')
+ax.legend(loc='upper right')
+
+# Display the beam plot
+st.pyplot(fig)
+
 # Plotting SFD and BMD
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
 fig.suptitle("Shear Force and Bending Moment Diagrams")
@@ -54,7 +80,7 @@ ax2.set_ylabel("Bending Moment (kNm)")
 ax2.grid(True)
 ax2.legend()
 
-# Display the plots
+# Display the SFD and BMD plots
 st.pyplot(fig)
 
 # Display calculated reactions
