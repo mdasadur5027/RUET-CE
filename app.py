@@ -8,7 +8,7 @@ st.set_page_config(layout="wide")  # Set layout to wide for side-by-side display
 col1, col2 = st.columns(2)
 
 with col1:
-    st.title("Enhanced Beam SFD and BMD Calculator")
+    st.title("Beam SFD and BMD Calculator")
 
     # Input: Beam length
     beam_length = st.number_input("Enter the beam length (m):", min_value=1.0, value=10.0, step=0.5)
@@ -94,27 +94,37 @@ with col2:
     # Calculate and display SFD and BMD
     # Placeholder values for SFD and BMD calculations based on basic principles
     # This part of code should be updated to correctly calculate based on supports and load types
-    
-    # Sample linear SFD and quadratic BMD assuming simple loads, not exact to all inputs
+
+    # Simple example calculation of shear force and bending moment (not accurate for complex cases)
     positions = np.linspace(0, beam_length, 100)
-    sfd_values = np.linspace(0, -20, 100)  # Placeholder for a simple linear SFD
-    bmd_values = -positions**2  # Placeholder for a parabolic BMD as an example
-    
-    fig, (ax_sfd, ax_bmd) = plt.subplots(2, 1, figsize=(12, 8))
-    
-    # SFD Plot
-    ax_sfd.plot(positions, sfd_values, '-b')
+
+    # Placeholder values: For the sake of example, we assume a linear SFD and parabolic BMD
+    sfd_values = np.zeros_like(positions)
+    bmd_values = np.zeros_like(positions)
+
+    # Example: Assuming a simple uniformly distributed load case
+    # Here, you would insert the correct calculation based on the inputs.
+    for i, pos in enumerate(positions):
+        # For demonstration: Simplified assumptions
+        sfd_values[i] = -10 * pos  # Placeholder for shear force calculation
+        bmd_values[i] = -0.5 * pos**2  # Placeholder for bending moment calculation
+
+    # Plotting the SFD
+    fig_sfd, ax_sfd = plt.subplots(figsize=(12, 6))
+    ax_sfd.plot(positions, sfd_values, '-b', label="Shear Force")
     ax_sfd.set_title("Shear Force Diagram (SFD)")
     ax_sfd.set_xlabel("Position along the beam (m)")
     ax_sfd.set_ylabel("Shear Force (kN)")
     ax_sfd.grid(True)
-    
-    # BMD Plot
-    ax_bmd.plot(positions, bmd_values, '-r')
+
+    # Plotting the BMD
+    fig_bmd, ax_bmd = plt.subplots(figsize=(12, 6))
+    ax_bmd.plot(positions, bmd_values, '-r', label="Bending Moment")
     ax_bmd.set_title("Bending Moment Diagram (BMD)")
     ax_bmd.set_xlabel("Position along the beam (m)")
     ax_bmd.set_ylabel("Bending Moment (kNm)")
     ax_bmd.grid(True)
-    
-    # Display the SFD and BMD plots
-    st.pyplot(fig)
+
+    # Displaying the SFD and BMD plots
+    st.pyplot(fig_sfd)
+    st.pyplot(fig_bmd)
