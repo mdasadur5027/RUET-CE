@@ -92,22 +92,33 @@ with col2:
     st.pyplot(fig)
 
     # Calculate and display SFD and BMD
-    # Placeholder values for SFD and BMD calculations based on basic principles
-    # This part of code should be updated to correctly calculate based on supports and load types
+    # Calculate reactions at supports (simplified assumption: 2 supports and point loads)
+    reactions = np.zeros(2)
+    total_load = sum([load[0] for load in point_loads]) + sum([load[0] * (load[2] - load[1]) for load in distributed_loads])
+    reactions[0] = total_load / 2
+    reactions[1] = total_load / 2
 
-    # Simple example calculation of shear force and bending moment (not accurate for complex cases)
+    # Calculate Shear Force and Bending Moment
     positions = np.linspace(0, beam_length, 100)
-
-    # Placeholder values: For the sake of example, we assume a linear SFD and parabolic BMD
     sfd_values = np.zeros_like(positions)
     bmd_values = np.zeros_like(positions)
 
-    # Example: Assuming a simple uniformly distributed load case
-    # Here, you would insert the correct calculation based on the inputs.
     for i, pos in enumerate(positions):
-        # For demonstration: Simplified assumptions
-        sfd_values[i] = -10 * pos  # Placeholder for shear force calculation
-        bmd_values[i] = -0.5 * pos**2  # Placeholder for bending moment calculation
+        # Calculate shear force
+        shear_force = reactions[0]  # Basic case: just reactions
+        for magnitude, position in point_loads:
+            if pos >= position:
+                shear_force -= magnitude
+
+        sfd_values[i] = shear_force
+
+        # Calculate bending moment (simplified)
+        bending_moment = 0
+        for j, (magnitude, position) in enumerate(point_loads):
+            if pos >= position:
+                bending_moment += magnitude * (pos - position)
+
+        bmd_values[i] = bending_moment
 
     # Plotting the SFD
     fig_sfd, ax_sfd = plt.subplots(figsize=(12, 6))
