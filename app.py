@@ -12,7 +12,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     # Input: Beam Length
-    beam_length = st.number_input('Enter the beam length (m):', min_value=.0, value=10.0, step=0.5) #,min value, default value, step
+    beam_length = st.number_input('Enter the beam length (m):', min_value=1.0, value=10.0, step=0.5) #,min value, default value, step
 
     # Input: Supports
     st.write('#### Define Supports') # The more the #, the font size will become smaller, and there must be a space after #
