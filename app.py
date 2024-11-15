@@ -8,7 +8,7 @@ st.set_page_config(layout="wide")  #Set layout to wide for side-by-side display
 st.title("Beam SFD and BMD Calculator")
 
 #  Container for input on the left side and output on the right side
-col1, col2 = st.columns(2)
+col1, col2 = st.columns([2, 3])
 
 with col1:
     # Input: Beam Length
@@ -61,9 +61,47 @@ with col1:
     st.write(moments)
 
 
+######## CALCULATION
+def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_length):
+    num_supports = len(supports)
+    if num_supports == 1:
+        for support_type, position in supports:
+            if support_type == "Fixed":
+                sum_point_loads = 0
+                sum_dist_loads = 0
+                sum_point_loads_moments = 0
+                sum_dist_loads_moments = 0
+                sum_external_moments = 0
+
+                for position, magnitude in point_loads:
+                    sum_point_loads += magnitude
+                    sum_point_loads_moments += magnitude*(position)
+                for start_pos, end_pos, start_mag, end_mag in distributed_loads:
+                    sum_dist_loads += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos))
+                    centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag-start_mag)/(end_mag+start_mag))
+                    distance_left = min(start_pos, end_pos)
+                    sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
+                for position, magnitude in moments:
+                    sum_external_moments += magnitude
+
+                reaction_1 = -sum_point_loads - sum_dist_loads
+                moment_1 = -sum_point_loads_moments -sum_dist_loads_moments -sum_external_moments -reaction_1*position
+                return sum_point_loads, sum_dist_loads, reaction_1, sum_point_loads_moments, sum_dist_loads_moments, sum_external_moments, moment_1
+            else:
+                return "Can't Solve"
+    elif num_supports == 2:
+        for support_type, position in supports:
+            if support_type == "Fixed":
+                return "Can't Solve"
+            else:
+                return "Can Solve"
+    else:
+        return "Can't Solve"
 
 
 with col2:
+    st.write('Upward Load +ve & Clockwise Moment +ve')
+
     # Display the beam with supports, loads and moments
     fig, ax = plt.subplots(figsize=(12, 4))
     ax.plot([0, beam_length], [0,0], 'b-', lw=20)
@@ -111,9 +149,12 @@ with col2:
     # Loop through point loads to draw arrows with adjusted positions and directions
     for position, magnitude in point_loads:
         if max_magnitude == 0:
-            break
+            continue
         # Calculate arrow length based on magnitude, scaled to fit within the y-limits
-        direction = -1 if magnitude > 0 else 1  # Downward if positive, upward if negative
+        direction = 1 if magnitude > 0 else (-1 if magnitude < 0 else 0)  # Downward if positive, upward if negative
+
+        if direction == 0:
+            continue
 
         # Determine the starting y-coordinate based on load direction and beam thickness
         start_y = -.22 * direction if magnitude > 0 else -.22 * direction
@@ -136,75 +177,83 @@ with col2:
         # Draw the red line from the arrowhead
         ax.plot([position, position], [start_y, -line_length], 'r-', lw=1.5)
         
-        point_loads_text = -line_length + .03 if magnitude > 0 else -line_length - 0.10
+        point_loads_text = -line_length - 0.10 if magnitude > 0 else -line_length + 0.05
         ax.text(position, point_loads_text, f'{abs(magnitude)} kN', color='red', ha='center')
+
+
 
     ## Distributed Load
     max_dist_magnitude = max((abs(mag) for _, _, mag1, mag2 in distributed_loads for mag in [mag1, mag2]), default=0)
     # st.write(max_dist_magnitude)
+
     for start_pos, end_pos, start_mag, end_mag in distributed_loads:
         if max_dist_magnitude == 0:
-            break
+            continue
+
         # Calculate directions based on magnitude signs
-        start_direction = -1 if start_mag > 0 else 1
-        end_direction = -1 if end_mag > 0 else 1
+        start_direction = 1 if start_mag > 0 else (-1 if start_mag < 0 else 0)
+        end_direction = 1 if end_mag > 0 else (-1 if end_mag < 0 else 0)
 
         # Determine starting y-coordinates
-        start_y = -0.22 * start_direction 
-        end_y = -0.22 * end_direction
+        start_y = -0.22 * start_direction if start_direction != 0 else 0
+        end_y = -0.22 * end_direction if end_direction != 0 else 0
 
-        # Draw arrows at the start and end positions
-        ax.arrow(
-            start_pos,
-            start_y,
-            0,
-            start_direction*0.01,
-            head_width=0.2,
-            head_length=0.1,
-            fc='green',
-            ec='green'
-        )
-        ax.arrow(
-            end_pos,
-            end_y,
-            0,
-            end_direction*0.01,
-            head_width=0.2,
-            head_length=0.1,
-            fc='green',
-            ec='green'
-        )
+        # Calculate line lengths proportionally based on max magnitude
+        start_line_length = start_direction * max(0.3, (abs(start_mag) / max_dist_magnitude) * 0.8) if start_direction != 0 else 0
+        end_line_length = end_direction * max(0.3, (abs(end_mag) / max_dist_magnitude) * 0.8) if end_direction != 0 else 0
 
-        # Calculate arrow lengths proportionally based on max magnitude
-        start_line_length = start_direction * max(0.3, (abs(start_mag) / max_dist_magnitude) * 0.8)
-        end_line_length = end_direction * max(0.3, (abs(end_mag) / max_dist_magnitude) * 0.8)
+        # Draw arrows at the start and end positions if direction is non-zero
+        if start_direction != 0:
+            ax.arrow(
+                start_pos,
+                start_y,
+                0,
+                start_direction * 0.01,
+                head_width=0.2,
+                head_length=0.1,
+                fc='green',
+                ec='green'
+            )
+        if end_direction != 0:
+            ax.arrow(
+                end_pos,
+                end_y,
+                0,
+                end_direction * 0.01,
+                head_width=0.2,
+                head_length=0.1,
+                fc='green',
+                ec='green'
+            )
 
-        # Draw the green line from the arrowhead
+        # Draw the green lines from the arrowheads or connect the fill directly to y=0
         ax.plot([start_pos, start_pos], [start_y, -start_line_length], 'g-', lw=1.5)
         ax.plot([end_pos, end_pos], [end_y, -end_line_length], 'g-', lw=1.5)
 
         # Connect the ends of the arrows and fill the area between
         x_coords = [start_pos, start_pos, end_pos, end_pos]
-        y_coords = [ -start_line_length, 0, 0, - end_line_length]
+        y_coords = [-start_line_length if start_direction != 0 else 0, 0, 0, -end_line_length if end_direction != 0 else 0]
         ax.fill(x_coords, y_coords, color='green', alpha=0.3)
 
-        # Label distributed load magnitudes at the start and end positions
-        start_pos_text = - start_line_length + 0.03 if start_mag > 0 else - start_line_length - 0.10
-        end_pos_text = - end_line_length + 0.03 if end_mag > 0 else - end_line_length - 0.10
-        ax.text(
-            start_pos,
-            start_pos_text,
-            f'{abs(start_mag)} kN/m',
-            color='green',
-            ha='center'
-        )
-        ax.text(
-            end_pos,
-            end_pos_text,
-            f'{abs(end_mag)} kN/m',
-            color='green',
-            ha='center'
-        )
+        # Label distributed load magnitudes at the start and end positions if direction is non-zero
+        if start_direction != 0:
+            start_pos_text = -start_line_length - 0.10 if start_mag > 0 else -start_line_length + 0.03
+            ax.text(
+                start_pos,
+                start_pos_text,
+                f'{abs(start_mag)} kN/m',
+                color='green',
+                ha='center'
+            )
+        if end_direction != 0:
+            end_pos_text = -end_line_length - 0.10 if end_mag > 0 else -end_line_length + 0.03
+            ax.text(
+                end_pos,
+                end_pos_text,
+                f'{abs(end_mag)} kN/m',
+                color='green',
+                ha='center'
+            )
 
     ## Moment
     clockwise_moment_icon_path = 'icons/moment_clockwise.png'
@@ -230,3 +279,12 @@ with col2:
 
     st.pyplot(fig)
     plt.show()
+
+
+    ## RESULTS
+    results = calculate_reactions(supports, point_loads, distributed_loads, moments, beam_length)
+    st.write(f"Reaction at support A: {results[2]} kN")
+    st.write(f"Moment at support A: {results[6]} kNm")
+
+
+    
