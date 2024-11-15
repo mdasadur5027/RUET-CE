@@ -68,6 +68,10 @@ with col2:
     fig, ax = plt.subplots(figsize=(12, 3))
     ax.plot([0, beam_length], [0,0], 'b-', lw=20)
 
+    ax.set_xlim(-beam_length * 0.1, beam_length * 1.1)
+    ax.set_ylim(-1, 1)
+    ax.get_yaxis().set_visible(False) # Hide y-axis
+
     ##Support
     # Load icons for each support type
     fixed_left_icon_path = 'icons/fixed_support_left.png'
@@ -81,10 +85,6 @@ with col2:
     fixed_icon_right = mpimg.imread(fixed_right_icon_path)
     roller_icon = mpimg.imread(roller_icon_path)
 
-    ax.set_xlim(-.5, beam_length+.5)
-    # ax.set_ylim(0, 1)
-    ax.get_yaxis().set_visible(False) # Hide y-axis
-
     for support_type, position in supports:
         if support_type == "Fixed":
             # Use the fixed support icon
@@ -97,15 +97,48 @@ with col2:
         elif support_type == "Hinge":
             # Use the hinge support icon
             imagebox = OffsetImage(hinge_icon, zoom=0.3)
-            ab = AnnotationBbox(imagebox, (position, -.01), frameon=False)
+            ab = AnnotationBbox(imagebox, (position, -.17), frameon=False)
             ax.add_artist(ab)
         elif support_type == "Roller":
             # Use the roller support icon
             imagebox = OffsetImage(roller_icon, zoom=0.3)
-            ab = AnnotationBbox(imagebox, (position, -.01), frameon=False)
+            ab = AnnotationBbox(imagebox, (position, -.17), frameon=False)
             ax.add_artist(ab)
 
     ##Point Load
+    max_magnitude = max(abs(mag) for _, mag in point_loads)  # Find the maximum magnitude
+    # st.write(max_magnitude)
+    # Loop through point loads to draw arrows with adjusted positions and directions
+    for position, magnitude in point_loads:
+        # Calculate arrow length based on magnitude, scaled to fit within the y-limits
+        direction = -1 if magnitude > 0 else 1  # Downward if positive, upward if negative
+
+        # Determine the starting y-coordinate based on load direction and beam thickness
+        start_y = -.25 * direction if magnitude > 0 else -.25 * direction
+
+        # Draw the arrow with the adjusted y-coordinate and length based on the load's sign and magnitude
+        ax.arrow(
+            position,              # x-coordinate of arrow's starting point
+            start_y,               # y-coordinate of arrow's starting point
+            0,                     # No horizontal movement, vertical arrow
+            direction * .01,  # Adjust length by direction and scaled magnitude
+            head_width=0.2,        # Width of the arrow head
+            head_length=0.1,       # Length of the arrow head
+            fc='red',              # Fill color of arrow
+            ec='red'               # Edge color of arrow
+        )
+        # Calculate the line length proportionally based on the max magnitude
+        line_length = direction * max(0.3, (abs(magnitude) / max_magnitude) * 0.8)
+        st.write(line_length)
+
+        # Draw the red line from the arrowhead
+        ax.plot([position, position], [start_y, -line_length], 'r-', lw=1.5)
+        
+        point_loads_text = -line_length + .03 if magnitude > 0 else -line_length - 0.12
+        ax.text(position, point_loads_text, f'{abs(magnitude)} kN', color='red', ha='center')
+
+    ## Distributed Load
+    
 
     st.pyplot(fig)
     plt.show()
