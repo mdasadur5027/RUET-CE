@@ -88,15 +88,15 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                 moment_1 = -sum_point_loads_moments -sum_dist_loads_moments -sum_external_moments -reaction_1*position
                 return sum_point_loads, sum_dist_loads, reaction_1, sum_point_loads_moments, sum_dist_loads_moments, sum_external_moments, moment_1
             else:
-                return "Can't Solve"
+                return False
     elif num_supports == 2:
         for support_type, position in supports:
             if support_type == "Fixed":
-                return "Can't Solve"
+                return False
             else:
                 return "Can Solve"
     else:
-        return "Can't Solve"
+        return False
 
 
 with col2:
@@ -283,8 +283,9 @@ with col2:
 
     ## RESULTS
     results = calculate_reactions(supports, point_loads, distributed_loads, moments, beam_length)
-    st.write(f"Reaction at support A: {results[2]} kN")
-    st.write(f"Moment at support A: {results[6]} kNm")
-
-
+    if results == False:
+        st.warning("Can't Solve")
+    else:
+        st.write(f"Reaction at support A: {results[2]} kN")
+        st.write(f"Moment at support A: {results[6]} kNm")
     
