@@ -45,8 +45,8 @@ with col1:
     for i in range(int(num_distributed_loads)):
         start_pos = st.number_input(f"Distributed Load {i+1} starting position (m from left):", min_value=0.0, max_value=beam_length, key=f"dist_load_start_{i}")
         end_pos = st.number_input(f"Distributed Load {i+1} ending position (m from left):", min_value=0.0, max_value=beam_length, key=f"dist_load_end_{i}")
-        start_mag = st.number_input(f"Distributed Load {i+1} start magnitude (kN/m):", step=1.0, key=f"dist_load_start_mag_{i}")
-        end_mag = st.number_input(f"Distributed Load {i+1} end magnitude (kN/m):", step=1.0, key=f"dist_load_end_mag_{i}")
+        start_mag = st.number_input(f"Distributed Load {i+1} start magnitude (kN/m):", step=0.5, key=f"dist_load_start_mag_{i}")
+        end_mag = st.number_input(f"Distributed Load {i+1} end magnitude (kN/m):", step=0.5, key=f"dist_load_end_mag_{i}")
         distributed_loads.append((start_pos, end_pos, start_mag, end_mag))
     st.write(distributed_loads)
 
@@ -65,7 +65,7 @@ with col1:
 
 with col2:
     # Display the beam with supports, loads and moments
-    fig, ax = plt.subplots(figsize=(12, 3))
+    fig, ax = plt.subplots(figsize=(12, 4))
     ax.plot([0, beam_length], [0,0], 'b-', lw=20)
 
     ax.set_xlim(-beam_length * 0.1, beam_length * 1.1)
@@ -97,24 +97,26 @@ with col2:
         elif support_type == "Hinge":
             # Use the hinge support icon
             imagebox = OffsetImage(hinge_icon, zoom=0.3)
-            ab = AnnotationBbox(imagebox, (position, -.17), frameon=False)
+            ab = AnnotationBbox(imagebox, (position, -.14), frameon=False)
             ax.add_artist(ab)
         elif support_type == "Roller":
             # Use the roller support icon
             imagebox = OffsetImage(roller_icon, zoom=0.3)
-            ab = AnnotationBbox(imagebox, (position, -.17), frameon=False)
+            ab = AnnotationBbox(imagebox, (position, -.14), frameon=False)
             ax.add_artist(ab)
 
     ##Point Load
-    max_magnitude = max(abs(mag) for _, mag in point_loads)  # Find the maximum magnitude
+    max_magnitude = max((abs(mag) for _, mag in point_loads), default=0) # Find the maximum magnitude
     # st.write(max_magnitude)
     # Loop through point loads to draw arrows with adjusted positions and directions
     for position, magnitude in point_loads:
+        if max_magnitude == 0:
+            break
         # Calculate arrow length based on magnitude, scaled to fit within the y-limits
         direction = -1 if magnitude > 0 else 1  # Downward if positive, upward if negative
 
         # Determine the starting y-coordinate based on load direction and beam thickness
-        start_y = -.25 * direction if magnitude > 0 else -.25 * direction
+        start_y = -.22 * direction if magnitude > 0 else -.22 * direction
 
         # Draw the arrow with the adjusted y-coordinate and length based on the load's sign and magnitude
         ax.arrow(
@@ -129,16 +131,102 @@ with col2:
         )
         # Calculate the line length proportionally based on the max magnitude
         line_length = direction * max(0.3, (abs(magnitude) / max_magnitude) * 0.8)
-        st.write(line_length)
+        # st.write(line_length)
 
         # Draw the red line from the arrowhead
         ax.plot([position, position], [start_y, -line_length], 'r-', lw=1.5)
         
-        point_loads_text = -line_length + .03 if magnitude > 0 else -line_length - 0.12
+        point_loads_text = -line_length + .03 if magnitude > 0 else -line_length - 0.10
         ax.text(position, point_loads_text, f'{abs(magnitude)} kN', color='red', ha='center')
 
     ## Distributed Load
-    
+    max_dist_magnitude = max((abs(mag) for _, _, mag1, mag2 in distributed_loads for mag in [mag1, mag2]), default=0)
+    # st.write(max_dist_magnitude)
+    for start_pos, end_pos, start_mag, end_mag in distributed_loads:
+        if max_dist_magnitude == 0:
+            break
+        # Calculate directions based on magnitude signs
+        start_direction = -1 if start_mag > 0 else 1
+        end_direction = -1 if end_mag > 0 else 1
+
+        # Determine starting y-coordinates
+        start_y = -0.22 * start_direction 
+        end_y = -0.22 * end_direction
+
+        # Draw arrows at the start and end positions
+        ax.arrow(
+            start_pos,
+            start_y,
+            0,
+            start_direction*0.01,
+            head_width=0.2,
+            head_length=0.1,
+            fc='green',
+            ec='green'
+        )
+        ax.arrow(
+            end_pos,
+            end_y,
+            0,
+            end_direction*0.01,
+            head_width=0.2,
+            head_length=0.1,
+            fc='green',
+            ec='green'
+        )
+
+        # Calculate arrow lengths proportionally based on max magnitude
+        start_line_length = start_direction * max(0.3, (abs(start_mag) / max_dist_magnitude) * 0.8)
+        end_line_length = end_direction * max(0.3, (abs(end_mag) / max_dist_magnitude) * 0.8)
+
+        # Draw the green line from the arrowhead
+        ax.plot([start_pos, start_pos], [start_y, -start_line_length], 'g-', lw=1.5)
+        ax.plot([end_pos, end_pos], [end_y, -end_line_length], 'g-', lw=1.5)
+
+        # Connect the ends of the arrows and fill the area between
+        x_coords = [start_pos, start_pos, end_pos, end_pos]
+        y_coords = [ -start_line_length, 0, 0, - end_line_length]
+        ax.fill(x_coords, y_coords, color='green', alpha=0.3)
+
+        # Label distributed load magnitudes at the start and end positions
+        start_pos_text = - start_line_length + 0.03 if start_mag > 0 else - start_line_length - 0.10
+        end_pos_text = - end_line_length + 0.03 if end_mag > 0 else - end_line_length - 0.10
+        ax.text(
+            start_pos,
+            start_pos_text,
+            f'{abs(start_mag)} kN/m',
+            color='green',
+            ha='center'
+        )
+        ax.text(
+            end_pos,
+            end_pos_text,
+            f'{abs(end_mag)} kN/m',
+            color='green',
+            ha='center'
+        )
+
+    ## Moment
+    clockwise_moment_icon_path = 'icons/moment_clockwise.png'
+    anticlockwise_moment_icon_path = 'icons/moment_anticlockwise.png'
+
+    clockwise_moment_icon = mpimg.imread(clockwise_moment_icon_path)
+    anticlockwise_moment_icon = mpimg.imread(anticlockwise_moment_icon_path)
+
+    for moment_position, moment_magnitude in moments:
+        if moment_magnitude > 0:
+            imagebox = OffsetImage(clockwise_moment_icon, zoom=0.13)
+            ab = AnnotationBbox(imagebox, (moment_position, 0.0), frameon=False)
+            ax.add_artist(ab)
+
+            ax.text(moment_position, 0.3, f'{abs(moment_magnitude)} kNm', color='black', ha='center')
+
+        elif moment_magnitude < 0:
+            imagebox = OffsetImage(anticlockwise_moment_icon, zoom=0.13)
+            ab = AnnotationBbox(imagebox, (moment_position, 0), frameon=False)
+            ax.add_artist(ab)
+
+            ax.text(moment_position, 0.3, f'{abs(moment_magnitude)} kNm', color='black', ha='center')
 
     st.pyplot(fig)
     plt.show()
