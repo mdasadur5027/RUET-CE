@@ -79,7 +79,7 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                     sum_point_loads_moments += magnitude*(position)
                 for start_pos, end_pos, start_mag, end_mag in distributed_loads:
                     sum_dist_loads += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos))
-                    centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag-start_mag)/(end_mag+start_mag))
+                    centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag+start_mag)/(end_mag+start_mag))
                     distance_left = min(start_pos, end_pos)
                     sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
                 for position, magnitude in moments:
