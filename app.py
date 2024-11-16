@@ -86,7 +86,7 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                     sum_external_moments += magnitude
 
                 reaction_1 = -sum_point_loads - sum_dist_loads
-                moment_1 = -sum_point_loads_moments -sum_dist_loads_moments -sum_external_moments
+                moment_1 = sum_point_loads_moments +sum_dist_loads_moments +sum_external_moments
                 return sum_point_loads, sum_dist_loads, reaction_1, sum_point_loads_moments, sum_dist_loads_moments, sum_external_moments, moment_1
             else:
                 return False
