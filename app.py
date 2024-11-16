@@ -26,7 +26,7 @@ with col1:
         else:
             position = st.number_input(f'Position of support {i+1} (m from left):',min_value=0.0, max_value=beam_length, key=f"support_pos_{i}")
         supports.append((select_support_type, position))
-    st.write(supports)
+    # st.write(supports)
 
     # Input: Point Loads
     st.write("#### Define Point Loads")
@@ -36,7 +36,7 @@ with col1:
         position = st.number_input(f"Point Load {i+1} position (m from left):", min_value=0.0, max_value=beam_length, key=f"point_load_pos_{i}")
         magnitude = st.number_input(f'Point Load {i+1} magnitude (kN):', step=0.5, key=f"point_load_mag_{i}")
         point_loads.append((position, magnitude))
-    st.write(point_loads)
+    # st.write(point_loads)
 
     #Input: Distributed Loads
     st.write("#### Define Distributed loads")
@@ -48,7 +48,7 @@ with col1:
         start_mag = st.number_input(f"Distributed Load {i+1} start magnitude (kN/m):", step=0.5, key=f"dist_load_start_mag_{i}")
         end_mag = st.number_input(f"Distributed Load {i+1} end magnitude (kN/m):", step=0.5, key=f"dist_load_end_mag_{i}")
         distributed_loads.append((start_pos, end_pos, start_mag, end_mag))
-    st.write(distributed_loads)
+    # st.write(distributed_loads)
 
     # Input: Moments
     st.write("#### Define Moments")
@@ -58,7 +58,7 @@ with col1:
         moment_position = st.number_input(f"Moment {i+1} position (m from left):", min_value=0.0, max_value=beam_length, key=f"moment_pos_{i}")
         moment_magnitude = st.number_input(f"Moment {i+1} magnitude (kNm)", step=1.0, key=f"moment_mag_{i}")
         moments.append((moment_position,moment_magnitude))
-    st.write(moments)
+    # st.write(moments)
 
 
 ######## CALCULATION
@@ -100,8 +100,37 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
             sum_dist_loads_moments = 0
             sum_external_moments = 0
 
-            for position, magnitude in 
-            return "Can Solve"
+            for position, magnitude in point_loads:
+                sum_point_loads += magnitude
+                sum_point_loads_moments += magnitude*(position)
+            for start_pos, end_pos, start_mag, end_mag in distributed_loads:
+                sum_dist_loads += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos))
+                centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag+start_mag)/(end_mag+start_mag))
+                distance_left = min(start_pos, end_pos)
+                sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
+            for position, magnitude in moments:
+                sum_external_moments += magnitude
+            
+
+            # [(1,1), (support_1_pos, support_2_pos)]*[(r1, r2)] = [(sum_point_load+sum_dist_load), (sum_point_moment+sum_dist_moment+sum_external_moment)]
+            # format: Ax = B
+            # formula: x = np.linalg.solve(A, B) 
+
+            reaction_coefficient_mat = [(1,1)]
+            support_position = []
+            for support_type, position in supports:
+                support_position.append(position)
+            reaction_coefficient_mat.append(support_position)
+            # st.write(reaction_coefficient_mat)
+
+            constant_mat = [(sum_point_loads+sum_dist_loads), (sum_point_loads_moments + sum_dist_loads_moments + sum_external_moments)]
+            # st.write(constant_mat)
+
+            r = np.linalg.solve(reaction_coefficient_mat, constant_mat)
+            r1, r2 = -r
+
+
+            return r1, r2
     else:
         return False
 
@@ -294,10 +323,13 @@ with col2:
     reactions= calculate_reactions(supports, point_loads, distributed_loads, moments, beam_length)
     if reactions == False:
         st.warning("Can't Solve")
-    else:
-        st.write(f"Reaction at support A: {reactions[2]} kN")
-        st.write(f"Moment at support A: {reactions[6]} kNm")
+    elif num_supports == 1:
+        st.write(f"Reaction at support A: **{reactions[2]} kN**")
+        st.write(f"Moment at support A: **{reactions[6]} kNm**")
         st.write(reactions)
+    else:
+        st.write(f"Reaction at support A: **{reactions[0]} kN**")
+        st.write(f"Reaction at support B: **{reactions[1]} kN**")
 
 
 
