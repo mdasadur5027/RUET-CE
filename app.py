@@ -12,7 +12,7 @@ col1, col2 = st.columns([2, 3])
 
 with col1:
     # Input: Beam Length
-    beam_length = st.number_input('Enter the beam length (m):', min_value=1.0, value=10.0, step=0.5) #,min value, default value, step
+    beam_length = st.number_input('Enter the beam length (m):', min_value=1.0, value=10.0, step=1.0) #,min value, default value, step
 
     # Input: Supports
     st.write('#### Define Supports') # The more the #, the font size will become smaller, and there must be a space after #
@@ -86,7 +86,7 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                     sum_external_moments += magnitude
 
                 reaction_1 = -sum_point_loads - sum_dist_loads
-                moment_1 = sum_point_loads_moments +sum_dist_loads_moments +sum_external_moments
+                moment_1 = sum_point_loads_moments +sum_dist_loads_moments -sum_external_moments
                 return sum_point_loads, sum_dist_loads, reaction_1, sum_point_loads_moments, sum_dist_loads_moments, sum_external_moments, moment_1
             else:
                 return False
@@ -94,6 +94,13 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
         if any(support_type == "Fixed" for support_type, position in supports):
             return False
         else:
+            sum_point_loads = 0
+            sum_dist_loads = 0
+            sum_point_loads_moments = 0
+            sum_dist_loads_moments = 0
+            sum_external_moments = 0
+
+            for position, magnitude in 
             return "Can Solve"
     else:
         return False
