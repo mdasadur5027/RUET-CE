@@ -86,7 +86,7 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                     sum_external_moments += magnitude
 
                 reaction_1 = -sum_point_loads - sum_dist_loads
-                moment_1 = -sum_point_loads_moments -sum_dist_loads_moments -sum_external_moments
+                moment_1 = -sum_point_loads_moments -sum_dist_loads_moments -sum_external_moments -reaction_1*position
                 return sum_point_loads, sum_dist_loads, reaction_1, sum_point_loads_moments, sum_dist_loads_moments, sum_external_moments, moment_1
             else:
                 return False
@@ -97,6 +97,103 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
             return "Can Solve"
     else:
         return False
+
+## Shear Force
+def calculate_shear_force(supports, point_loads, distributed_loads, reactions, beam_length, resolution=100):
+    """
+    Calculate the shear force at different positions along the beam.
+
+    Parameters:
+    - supports: List of tuples (type, position) defining the beam supports.
+    - point_loads: List of tuples (position, magnitude) for point loads.
+    - distributed_loads: List of tuples (start_pos, end_pos, start_mag, end_mag) for distributed loads.
+    - reactions: List of reactions at the supports.
+    - beam_length: Length of the beam (m).
+    - resolution: Number of points to calculate along the beam.
+
+    Returns:
+    - List of shear force values at evenly spaced positions along the beam.
+    """
+    # Initialize variables
+    shear_force = [0] * resolution  # Array to store shear force at each segment
+    x_positions = [i * beam_length / (resolution - 1) for i in range(resolution)]  # x-axis positions
+
+    # Add reactions at supports
+    for reaction, (_, pos) in zip(reactions, supports):
+        for i, x in enumerate(x_positions):
+            if x >= pos:
+                shear_force[i] += reaction
+
+    # Add contributions from point loads
+    for pos, magnitude in point_loads:
+        for i, x in enumerate(x_positions):
+            if x >= pos:
+                shear_force[i] -= magnitude
+
+    # Add contributions from distributed loads
+    for start_pos, end_pos, start_mag, end_mag in distributed_loads:
+        for i, x in enumerate(x_positions):
+            if x > start_pos:
+                if x <= end_pos:  # Within the distributed load range
+                    # Shear contribution from the triangular portion
+                    avg_mag = start_mag + ((end_mag - start_mag) / (end_pos - start_pos)) * (x - start_pos)
+                    shear_force[i] -= avg_mag * (x - start_pos)
+                else:  # Beyond the distributed load range
+                    total_load = 0.5 * (start_mag + end_mag) * (end_pos - start_pos)
+                    shear_force[i] -= total_load
+
+    return x_positions, shear_force
+
+## Bending Moment
+def calculate_bending_moment(supports, point_loads, distributed_loads, reactions, beam_length, resolution=100):
+    """
+    Calculate the bending moment at different positions along the beam.
+
+    Parameters:
+    - supports: List of tuples (type, position) defining the beam supports.
+    - point_loads: List of tuples (position, magnitude) for point loads.
+    - distributed_loads: List of tuples (start_pos, end_pos, start_mag, end_mag) for distributed loads.
+    - reactions: List of reactions at the supports.
+    - beam_length: Length of the beam (m).
+    - resolution: Number of points to calculate along the beam.
+
+    Returns:
+    - List of bending moment values at evenly spaced positions along the beam.
+    """
+    # Initialize variables
+    bending_moment = [0] * resolution  # Array to store bending moment at each segment
+    x_positions = [i * beam_length / (resolution - 1) for i in range(resolution)]  # x-axis positions
+
+    # Add contributions from reactions
+    for reaction, (_, pos) in zip(reactions, supports):
+        for i, x in enumerate(x_positions):
+            if x >= pos:
+                bending_moment[i] += reaction * (x - pos)
+
+    # Add contributions from point loads
+    for pos, magnitude in point_loads:
+        for i, x in enumerate(x_positions):
+            if x >= pos:
+                bending_moment[i] -= magnitude * (x - pos)
+
+    # Add contributions from distributed loads
+    for start_pos, end_pos, start_mag, end_mag in distributed_loads:
+        for i, x in enumerate(x_positions):
+            if x > start_pos:
+                if x <= end_pos:  # Within the distributed load range
+                    # Linear variation in distributed load magnitude
+                    distance = x - start_pos
+                    avg_mag = start_mag + ((end_mag - start_mag) / (end_pos - start_pos)) * distance
+                    bending_moment[i] -= (avg_mag * distance**2) / 2
+                else:  # Beyond the distributed load range
+                    # Total load and its moment contribution
+                    total_load = 0.5 * (start_mag + end_mag) * (end_pos - start_pos)
+                    centroid_dist = (end_pos - start_pos) / 3 * (2 * end_mag + start_mag) / (end_mag + start_mag)
+                    bending_moment[i] -= total_load * (x - (start_pos + centroid_dist))
+
+    return x_positions, bending_moment
+
+
 
 
 
@@ -284,16 +381,48 @@ with col2:
 
 
     ## RESULTS
-    reactions= calculate_reactions(supports, point_loads, distributed_loads, moments, beam_length)
+    reaction_forces= calculate_reactions(supports, point_loads, distributed_loads, moments, beam_length)
+    reactions = reaction_forces[2]
+    shear_force = calculate_shear_force(supports, point_loads, distributed_loads, reaction_forces, beam_length, resolution=100)
+    bending_moment = calculate_bending_moment(supports, point_loads, distributed_loads, reaction_forces, beam_length, resolution=100)
     if reactions == False:
         st.warning("Can't Solve")
     else:
-        st.write(f"Reaction at support A: {reactions[2]} kN")
-        st.write(f"Moment at support A: {reactions[6]} kNm")
-        st.write(reactions)
+        st.write(f"Reaction at support A: {reaction_forces[2]} kN")
+        st.write(f"Moment at support A: {reaction_forces[6]} kNm")
+    st.write(f"Shear Forces: {shear_force}")
+    st.write(f"Bending Moments: {bending_moment}")
 
 
 
 
 
+    ## PLot SFD & BMD
+    # Streamlit Inputs for Beam Definition
+    # Input: Reactions (dummy example, you can calculate actual reactions using your reaction function)
+
+    # Plot SFD
+    x_positions, shear_force = calculate_shear_force(supports, point_loads, distributed_loads, reaction_forces, beam_length)
+    st.write("### Shear Force Diagram (SFD)")
+    fig, ax = plt.subplots()
+    ax.plot(x_positions, shear_force, label="Shear Force", color="blue")
+    ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
+    ax.set_xlabel("Position along the beam (m)")
+    ax.set_ylabel("Shear Force (kN)")
+    ax.legend()
+    st.pyplot(fig)
+
+    # Plot BMD
+    x_positions, bending_moment = calculate_bending_moment(supports, point_loads, distributed_loads, reaction_forces, beam_length)
+    st.write("### Bending Moment Diagram (BMD)")
+    fig, ax = plt.subplots()
+    ax.plot(x_positions, bending_moment, label="Bending Moment", color="red")
+    ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
+    ax.set_xlabel("Position along the beam (m)")
+    ax.set_ylabel("Bending Moment (kNm)")
+    ax.legend()
+    st.pyplot(fig)
+
+
+    
     
