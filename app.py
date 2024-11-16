@@ -79,9 +79,12 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                     sum_point_loads_moments += magnitude*(position)
                 for start_pos, end_pos, start_mag, end_mag in distributed_loads:
                     sum_dist_loads += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos))
-                    centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag+start_mag)/(end_mag+start_mag))
-                    distance_left = min(start_pos, end_pos)
-                    sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
+                    if end_mag+start_mag != 0 :
+                        centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag+start_mag)/(end_mag+start_mag))
+                        distance_left = min(start_pos, end_pos)
+                        sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
+                    else:
+                        return False
                 for position, magnitude in moments:
                     sum_external_moments += magnitude
 
@@ -105,9 +108,12 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                 sum_point_loads_moments += magnitude*(position)
             for start_pos, end_pos, start_mag, end_mag in distributed_loads:
                 sum_dist_loads += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos))
-                centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag+start_mag)/(end_mag+start_mag))
-                distance_left = min(start_pos, end_pos)
-                sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
+                if end_mag+start_mag != 0 :
+                    centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag+start_mag)/(end_mag+start_mag))
+                    distance_left = min(start_pos, end_pos)
+                    sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
+                else:
+                    return False
             for position, magnitude in moments:
                 sum_external_moments += magnitude
             
@@ -324,12 +330,15 @@ with col2:
     if reactions == False:
         st.warning("Can't Solve")
     elif num_supports == 1:
-        st.write(f"Reaction at support A: **{reactions[2]} kN**")
-        st.write(f"Moment at support A: **{reactions[6]} kNm**")
-        st.write(reactions)
+        # st.write(f"Reaction at support A: **{round(reactions[2],2)} kN**")
+        # st.write(f"Moment at support A: **{round(reactions[6],2)} kNm**")
+        st.write("Reaction at support A: ", round(reactions[2],2), " kN")
+        st.write("Moment at support A: ", round(reactions[6],2), " kNm")
+        # st.write(reactions)
     else:
-        st.write(f"Reaction at support A: **{reactions[0]} kN**")
-        st.write(f"Reaction at support B: **{reactions[1]} kN**")
+        st.write(f"Reaction at support A: **{round(reactions[0],2)} kN**")
+        st.write(f"Reaction at support B: **{round(reactions[1],2)} kN**")
+        
 
 
 
