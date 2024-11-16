@@ -90,11 +90,10 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
             else:
                 return False
     elif num_supports == 2:
-        for support_type, position in supports:
-            if support_type == "Fixed":
-                return False
-            else:
-                return "Can Solve"
+        if any(support_type == "Fixed" for support_type, position in supports):
+            return False
+        else:
+            return "Can Solve"
     else:
         return False
 
