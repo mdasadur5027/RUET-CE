@@ -74,17 +74,26 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                 sum_dist_loads_moments = 0
                 sum_external_moments = 0
 
+                fixed_support_pos = position
+
                 for position, magnitude in point_loads:
                     sum_point_loads += magnitude
-                    sum_point_loads_moments += magnitude*(position)
+                    sum_point_loads_moments += magnitude * abs(position - fixed_support_pos)
+
                 for start_pos, end_pos, start_mag, end_mag in distributed_loads:
                     sum_dist_loads += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos))
                     if end_mag+start_mag != 0 :
                         centroid_left = ((abs(end_pos-start_pos))/3) * ((2*end_mag+start_mag)/(end_mag+start_mag))
+                        centroid_right = abs(start_pos - end_pos) - centroid_left
                         distance_left = min(start_pos, end_pos)
-                        sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
-                    else:
-                        return False
+                        distance_right = beam_length - max(start_pos, end_pos)
+                        if fixed_support_pos == 0:
+                            sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
+                        else:
+                            sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_right+distance_right)
+                    # else:
+                    #     return False
+
                 for position, magnitude in moments:
                     sum_external_moments += magnitude
 
@@ -186,9 +195,14 @@ def shear_force(support_reactions, point_loads, distributed_loads, beam_length, 
                         # st.write(f"x: {x}, Load: {load:.2f}, Increment: {increment:.2f}, Updated Shear: {shear[i]:.2f}")
     return x_coords, shear
 
-def bending_moment(support_reactions, support_moments, point_loads, distributed_loads, external_moments, beam_length, resolution):
+def bending_moment(supports, support_reactions, support_moments, point_loads, distributed_loads, external_moments, beam_length, resolution):
     bending_moment = [0.0] * (int(beam_length * resolution) + 1)
     x_coords = np.linspace(0, beam_length, len(bending_moment))
+
+    #fixed support postion
+    for support_types, position in supports:
+        if support_types == "Fixed":
+            fixed_support_pos = position
 
     # add support reaction moment to bending moment
     for position, magnitude in support_reactions:
@@ -201,7 +215,10 @@ def bending_moment(support_reactions, support_moments, point_loads, distributed_
         for position, magnitude in support_moments:
             for i, x in enumerate(x_coords):
                 if x >= position:
-                    bending_moment[i] += magnitude
+                    if fixed_support_pos == 0:
+                        bending_moment[i] += magnitude
+                    else:
+                        bending_moment[i] -= magnitude
     
     # add point load to the bending moment
     for position, magnitude in point_loads:
@@ -223,8 +240,6 @@ def bending_moment(support_reactions, support_moments, point_loads, distributed_
                 for j, y in enumerate(x_coords):
                     if y >= x:
                         bending_moment[j] += (y - x) * increment
-
-
 
     return x_coords, bending_moment
 
@@ -461,7 +476,7 @@ with col2:
     plt.show()
 
     # BMD
-    x_coords, bending_moment = bending_moment(support_reactions, support_moments, point_loads, distributed_loads, moments, beam_length, resolution)
+    x_coords, bending_moment = bending_moment(supports, support_reactions, support_moments, point_loads, distributed_loads, moments, beam_length, resolution)
     
     fig, ax = plt.subplots(figsize=(12,4))
     ax.plot(x_coords, bending_moment, color ="green")
@@ -473,5 +488,3 @@ with col2:
     # ax.legend()
     st.pyplot(fig)
     plt.show()
-
-    
