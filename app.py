@@ -132,10 +132,10 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
                     sum_dist_loads_moments += 0.5 * (start_mag + end_mag) * (abs(end_pos-start_pos)) * (centroid_left+distance_left)
                 else:
                     return False
+
             for position, magnitude in moments:
                 sum_external_moments += magnitude
             
-
             # [(1,1), (support_1_pos, support_2_pos)]*[(r1, r2)] = [(sum_point_load+sum_dist_load), (sum_point_moment+sum_dist_moment+sum_external_moment)]
             # format: Ax = B
             # formula: x = np.linalg.solve(A, B) 
@@ -147,7 +147,7 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
             reaction_coefficient_mat.append(support_position)
             # st.write(reaction_coefficient_mat)
 
-            constant_mat = [(sum_point_loads+sum_dist_loads), (sum_point_loads_moments + sum_dist_loads_moments + sum_external_moments)]
+            constant_mat = [(sum_point_loads + sum_dist_loads), (sum_point_loads_moments + sum_dist_loads_moments - sum_external_moments)]
             # st.write(constant_mat)
 
             r = np.linalg.solve(reaction_coefficient_mat, constant_mat)
@@ -240,6 +240,12 @@ def bending_moment(supports, support_reactions, support_moments, point_loads, di
                 for j, y in enumerate(x_coords):
                     if y >= x:
                         bending_moment[j] += (y - x) * increment
+    
+    # add external moments
+    for position, magnitude in external_moments:
+        for i, x in enumerate(x_coords):
+            if x >= position:
+                bending_moment[i] += magnitude
 
     return x_coords, bending_moment
 
