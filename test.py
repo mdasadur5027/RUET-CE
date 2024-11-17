@@ -1,21 +1,31 @@
-import numpy as np
+import streamlit as st
 
-# Define the matrix A
-A = np.array([[2, 5],
-              [6, 7]])
+# Initialize session state for navigation
+if 'page' not in st.session_state:
+    st.session_state.page = 'Home'
 
-# Define the vector B
-B = np.array([100, 150])
+# Navigation function
+def navigate_to(page_name):
+    st.session_state.page = page_name
 
-# Solve for x
-x = np.linalg.solve(A, B)
+# Sidebar for navigation
+st.sidebar.title("Navigation")
+if st.sidebar.button("Go to Home"):
+    navigate_to('Home')
+if st.sidebar.button("Go to About"):
+    navigate_to('About')
+if st.sidebar.button("Go to Contact"):
+    navigate_to('Contact')
 
-# Extract x1 and x2
-x1, x2 = x
+# Main content rendering based on the selected page
+if st.session_state.page == 'Home':
+    st.title("Welcome to the Home Page")
+    st.write("This is the main page of your Streamlit app.")
 
-# x1, x2 = A
+elif st.session_state.page == 'About':
+    st.title("About Page")
+    st.write("This page provides information about the app.")
 
-print(f"x1 = {x1}")
-print(f"x2 = {x2}")
-
-
+elif st.session_state.page == 'Contact':
+    st.title("Contact Page")
+    st.write("Feel free to reach out to us!")
