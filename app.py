@@ -494,3 +494,12 @@ with col2:
     # ax.legend()
     st.pyplot(fig)
     plt.show()
+    
+
+# My Introduction
+st.subheader("About Me")
+st.markdown("""
+**Name**: Md. Asadur Rahman  
+**Department**: Civil Engineering, RUET  
+**ID**: 2100160  
+""")
