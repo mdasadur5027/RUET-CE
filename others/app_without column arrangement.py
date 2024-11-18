@@ -20,16 +20,12 @@ with col1:
     num_supports = st.number_input('Number of Supports', min_value=1, max_value=2, value=1)
     supports = []
     for i in range(int(num_supports)):
-        col1_a, col1_b = st.columns(2)
-        with col1_a:
-            select_support_type = st.selectbox(f"Support {i+1} type:", support_types, key=f"support_type_{i}") #This key parameter gives each dropdown a unique identifier based on the loop index i
-            if select_support_type == "Fixed":
-                with col1_b:
-                    position = st.selectbox(f'Position of support {i+1} (m from left):', options=[0.0, beam_length], key=f"support_pos_{i}")
-            else:
-                with col1_b:
-                    position = st.number_input(f'Position of support {i+1} (m from left):',min_value=0.0, max_value=beam_length, step=1.0, key=f"support_pos_{i}")
-            supports.append((select_support_type, position))
+        select_support_type = st.selectbox(f"Support {i+1} type:", support_types, key=f"support_type_{i}") #This key parameter gives each dropdown a unique identifier based on the loop index i
+        if select_support_type == "Fixed":
+            position = st.selectbox(f'Position of support {i+1} (m from left):', options=[0.0, beam_length], key=f"support_pos_{i}")
+        else:
+            position = st.number_input(f'Position of support {i+1} (m from left):',min_value=0.0, max_value=beam_length, key=f"support_pos_{i}")
+        supports.append((select_support_type, position))
     # st.write(supports)
 
     # Input: Point Loads
@@ -37,11 +33,8 @@ with col1:
     num_point_loads = st.number_input('Number of point loads', min_value=0, max_value=5, value=0)
     point_loads = []
     for i in range(int(num_point_loads)):
-        col1_c, col1_d = st.columns(2)
-        with col1_c:
-            position = st.number_input(f"Point Load {i+1} position (m from left):", min_value=0.0, max_value=beam_length, step=1.0, key=f"point_load_pos_{i}")
-        with col1_d:
-            magnitude = st.number_input(f'Point Load {i+1} magnitude (kN):', step=0.5, key=f"point_load_mag_{i}")
+        position = st.number_input(f"Point Load {i+1} position (m from left):", min_value=0.0, max_value=beam_length, key=f"point_load_pos_{i}")
+        magnitude = st.number_input(f'Point Load {i+1} magnitude (kN):', step=0.5, key=f"point_load_mag_{i}")
         point_loads.append((position, magnitude))
     # st.write(point_loads)
 
@@ -50,13 +43,10 @@ with col1:
     num_distributed_loads = st.number_input("Number of Distributed Loads", min_value=0, max_value=3, value=0)
     distributed_loads = []
     for i in range(int(num_distributed_loads)):
-        col1_e, col1_f = st.columns(2)
-        with col1_e:
-            start_pos = st.number_input(f"Distributed Load {i+1} starting position (m from left):", min_value=0.0, max_value=beam_length, step=1.0, key=f"dist_load_start_{i}")
-            start_mag = st.number_input(f"Distributed Load {i+1} start magnitude (kN/m):", step=0.5, key=f"dist_load_start_mag_{i}")
-        with col1_f:
-            end_pos = st.number_input(f"Distributed Load {i+1} ending position (m from left):", min_value=0.0, max_value=beam_length, step=1.0, key=f"dist_load_end_{i}")
-            end_mag = st.number_input(f"Distributed Load {i+1} end magnitude (kN/m):",value= start_mag, step=0.5, key=f"dist_load_end_mag_{i}")
+        start_pos = st.number_input(f"Distributed Load {i+1} starting position (m from left):", min_value=0.0, max_value=beam_length, key=f"dist_load_start_{i}")
+        end_pos = st.number_input(f"Distributed Load {i+1} ending position (m from left):", min_value=0.0, max_value=beam_length, key=f"dist_load_end_{i}")
+        start_mag = st.number_input(f"Distributed Load {i+1} start magnitude (kN/m):", step=0.5, key=f"dist_load_start_mag_{i}")
+        end_mag = st.number_input(f"Distributed Load {i+1} end magnitude (kN/m):", step=0.5, key=f"dist_load_end_mag_{i}")
         distributed_loads.append((start_pos, end_pos, start_mag, end_mag))
     # st.write(distributed_loads)
 
@@ -65,11 +55,8 @@ with col1:
     num_moments = st.number_input("Number of Moments:", min_value=0, max_value=3, value=0)
     moments = []
     for i in range(int(num_moments)):
-        col1_g, col1_h = st.columns(2)
-        with col1_g:
-            moment_position = st.number_input(f"Moment {i+1} position (m from left):", min_value=0.0, max_value=beam_length, step=1.0, key=f"moment_pos_{i}")
-        with col1_h:
-            moment_magnitude = st.number_input(f"Moment {i+1} magnitude (kNm)", step=1.0, key=f"moment_mag_{i}")
+        moment_position = st.number_input(f"Moment {i+1} position (m from left):", min_value=0.0, max_value=beam_length, key=f"moment_pos_{i}")
+        moment_magnitude = st.number_input(f"Moment {i+1} magnitude (kNm)", step=1.0, key=f"moment_mag_{i}")
         moments.append((moment_position,moment_magnitude))
     # st.write(moments)
 
@@ -264,8 +251,8 @@ def bending_moment(supports, support_reactions, support_moments, point_loads, di
 
 with col2:
 
-    col2_a, col2_b = st.columns(2)
-    with col2_a:
+    col3, col4 = st.columns(2)
+    with col3:
         ## RESULTS
         # Reactions and Moments
         support_reactions_moments = calculate_reactions(supports, point_loads, distributed_loads, moments, beam_length)
@@ -293,7 +280,7 @@ with col2:
                 # st.write(f"Reaction at support B: **{round(reactions[1],2)} kN**")
                 st.write("Reaction at support A: ", round(Ra,2), " kN")
                 st.write("Reaction at support B: ", round(Rb,2), " kN")
-    with col2_b:
+    with col4:
         # Input for resolution
         resolution = st.number_input("Resolution (higher = more precision)", min_value=10, max_value=1000, value=100, step=10)
     
