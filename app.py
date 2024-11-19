@@ -515,4 +515,6 @@ st.markdown("""
 **Name**: Md. Asadur Rahman  
 **Department**: Civil Engineering, RUET  
 **ID**: 2100160  
+
+Feel free to reach out at mdasadur5027@gmail.com for any inquiries or collaborations.
 """)
