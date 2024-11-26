@@ -6,6 +6,10 @@ import numpy as np
 
 st.set_page_config(layout="wide")  #Set layout to wide for side-by-side display
 st.title("Beam SFD and BMD Calculator")
+st.markdown(
+    '<p style="font-size:13px; font-weight:bold">For the best experience, please access the app on a laptop.</p>', 
+    unsafe_allow_html=True
+)
 
 #  Container for input on the left side and output on the right side
 col1, col2 = st.columns([2, 3])
