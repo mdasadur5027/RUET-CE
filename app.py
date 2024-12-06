@@ -167,8 +167,12 @@ def calculate_reactions(supports, point_loads, distributed_loads, moments, beam_
             constant_mat = [(sum_point_loads + sum_dist_loads), (sum_point_loads_moments + sum_dist_loads_moments - sum_external_moments)]
             # st.write(constant_mat)
 
-            r = np.linalg.solve(reaction_coefficient_mat, constant_mat)
-            r1, r2 = -r
+            try:
+                r = np.linalg.solve(reaction_coefficient_mat, constant_mat)
+                r1, r2 = -r
+            except np.linalg.LinAlgError:
+                r1 = 0
+                r2 = 0
 
         reaction_mag = [r1, r2]
         reaction_pos = []
