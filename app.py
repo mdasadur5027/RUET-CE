@@ -6,6 +6,7 @@ import numpy as np
 
 st.set_page_config(layout="wide")  #Set layout to wide for side-by-side display
 st.title("Beam SFD and BMD Calculator")
+st.write("Better version is available (v2.0): https://beam-calculator.streamlit.app/")
 st.markdown(
     '<p style="font-size:13px; font-weight:bold">For the best experience, please access the app on a laptop.</p>', 
     unsafe_allow_html=True
